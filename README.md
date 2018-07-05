@@ -1,5 +1,7 @@
 # Trainingham
 
+![Trainingham logo](https://s3.amazonaws.com/trainingham-s3/logo.jpg)
+
 Friends, are you tired of getting stuck in a sudden traffic jam at Framingham Center? 
 
 Has a train delay made you late for your wedding, parole hearing, or blood draw at the Framingham Heart Study?
