@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+    <head>
+
+
+        <meta charset="utf-8">
+        <!--<meta http-equiv="X-UA-Compatible" content="IE=edge">-->
+        <meta name="viewport" content="width=device-width">
+
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" integrity="sha512-dTfge/zgoMYpP7QbHy4gWMEGsbsdZeCXz7irItjcC3sPUFtf0kuFbDz/ixG7ArTxmDjLXDmezHubeNikyKGVyQ==" crossorigin="anonymous">
+
+        <!-- Refresh page every 30 seconds-->
+		<meta http-equiv="refresh" content="30">
+
+        <title>Trainingham</title>
+        <!-- Favicons -->
+		<link rel="apple-touch-icon" sizes="57x57" href="https://s3.amazonaws.com/trainingham-s3/favicons/apple-icon-57x57.png">
+		<link rel="apple-touch-icon" sizes="60x60" href="https://s3.amazonaws.com/trainingham-s3/favicons/apple-icon-60x60.png">
+		<link rel="apple-touch-icon" sizes="72x72" href="https://s3.amazonaws.com/trainingham-s3/favicons/apple-icon-72x72.png">
+		<link rel="apple-touch-icon" sizes="76x76" href="https://s3.amazonaws.com/trainingham-s3/favicons/apple-icon-76x76.png">
+		<link rel="apple-touch-icon" sizes="114x114" href="https://s3.amazonaws.com/trainingham-s3/favicons/apple-icon-114x114.png">
+		<link rel="apple-touch-icon" sizes="120x120" href="https://s3.amazonaws.com/trainingham-s3/favicons/apple-icon-120x120.png">
+		<link rel="apple-touch-icon" sizes="144x144" href="https://s3.amazonaws.com/trainingham-s3/favicons/apple-icon-144x144.png">
+		<link rel="apple-touch-icon" sizes="152x152" href="https://s3.amazonaws.com/trainingham-s3/favicons/apple-icon-152x152.png">
+		<link rel="apple-touch-icon" sizes="180x180" href="https://s3.amazonaws.com/trainingham-s3/favicons/apple-icon-180x180.png">
+		<link rel="icon" type="image/png" sizes="192x192"  href="https://s3.amazonaws.com/trainingham-s3/favicons/android-icon-192x192.png">
+		<link rel="icon" type="image/png" sizes="32x32" href="https://s3.amazonaws.com/trainingham-s3/favicons/favicon-32x32.png">
+		<link rel="icon" type="image/png" sizes="96x96" href="https://s3.amazonaws.com/trainingham-s3/favicons/favicon-96x96.png">
+		<link rel="icon" type="image/png" sizes="16x16" href="https://s3.amazonaws.com/trainingham-s3/favicons/favicon-16x16.png">
+		<link rel="manifest" href="https://s3.amazonaws.com/trainingham-s3/favicons/manifest.json">
+		<meta name="msapplication-TileColor" content="#ffffff">
+		<meta name="msapplication-TileImage" content="https://s3.amazonaws.com/trainingham-s3/favicons/ms-icon-144x144.png">
+		<meta name="theme-color" content="#ffffff">
+
+    </head>
+
+    <body>
+
+        <!-- Nav bar -->
+
+        <nav class="navbar navbar-inverse">
+          <div class="container-fluid">
+            <div class="navbar-header">
+
+                <!-- Logo image, stored on S3-->
+                <img src="https://s3.amazonaws.com/trainingham-s3/logo.jpg" style="height: auto; width: auto; max-width: 300px; max-height: 300px; border-radius: 50%;"/>
+                <font size="7" color="lightgray">&nbsp;Trainingham</font><font size="5" color="lightgray"></font>
+
+            </div>
+          </div>
+        </nav>
+
+        <div class="container">
+
+            <div class="row">
+                <h3>The next MBTA trains will jam up Framingham Center in:</h3>
+            </div>
+
+            <div style="margin: 0%;">
+
+				{% for train in upcoming_trains %}
+	            <div id="result" class="row" style="margin-left: 20%">
+	                <div class="row" style="font-size: medium;">
+	                    <h2>{{ train }} </h2>
+	                </div>
+	            </div>
+	            {% endfor %}
+
+	        </div>
+
+            <div class="row">
+                <p>&nbsp; </p>
+                <p>Based on live train predictions from MBTA. This page updates every 30 seconds.</p>
+                <p>&nbsp; </p>
+                <p><i>Warning: I can't predict freight trains. CSX told me: "Any time is train time." </i></p>
+            </div>
+        </div>
+
+    </body>
+</html>
