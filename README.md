@@ -8,7 +8,7 @@ Has a train delay made you late for your wedding, court date, or meeting with th
 
 I am Trainingham: the app that predicts jam-ups at Framingham Center caused by commuter rail trains.
 
-Check me out at [train.chadparmet.com](https://train.chadparmet.com).
+Check me out at [train.chadparmet.com](http://train.chadparmet.com).
 
 --
 Uses live train tracking from the MBTA API.
