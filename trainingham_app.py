@@ -25,7 +25,7 @@ def convert_crossing_time(crossing_time):
     crossing_time_formatted = dt.datetime.strptime(crossing_time, FMT)
     now_formatted = now_local_time()
     tdelta = crossing_time_formatted - now_formatted
-    # 1200 is a Temporary fudge factor. Needs a permanent fix.
+    # 1200 is a Temporary fudge factor for AWS deployment. So far it's working/
     mins_till_next_crossing = int(tdelta.seconds / 60) - 1200
     return mins_till_next_crossing
 
@@ -73,9 +73,16 @@ def next_crossings():
 
         crossing_time, _ = crossing_time.split('-')
         mins_till_next_crossing = convert_crossing_time(crossing_time)
-        upcoming_crossings.append(str(mins_till_next_crossing) + ' minutes')
 
-    return upcoming_crossings
+        upcoming_crossings.append(mins_till_next_crossing)
+
+    # Sort the times in ascending order. I noticed sometimes the MBTA API returns predictions out of order.
+    upcoming_crossings.sort()
+
+    # Add "minutes" string, using a list comprehension
+    result = [str(crossing) + ' minutes' for crossing in upcoming_crossings]
+
+    return result
 
 
 # Flask app
