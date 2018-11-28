@@ -91,9 +91,11 @@ def next_crossings():
 def index():
     if request.method == "GET":
 
+        current_time = now_local_time()
+
         upcoming_crossings = next_crossings()
 
-        return render_template("main_page.html", upcoming_trains=upcoming_crossings)
+        return render_template("main_page.html", upcoming_trains=upcoming_crossings, current_time = current_time)
 
 if __name__ == "__main__":
     app.run()
