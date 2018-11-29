@@ -5,29 +5,41 @@ import pytz
 
 app = Flask(__name__)
 FMT = '%H:%M:%S'
+timezone = pytz.timezone("America/New_York")
 
 # Get the current local time in Framingham time zone
 def now_local_time():
-    global FMT
+    global timezone
 
     now = dt.datetime.now()
-    timezone = pytz.timezone("America/New_York")
     now_tz_aware = timezone.localize(now)
-    time_tz_aware = dt.time(hour=now_tz_aware.hour, minute=now_tz_aware.minute)
-    time_tz_aware_formatted = dt.datetime.strptime(time_tz_aware.strftime(FMT), FMT)
+    time_tz_aware_formatted = now_tz_aware.astimezone(timezone)
     return time_tz_aware_formatted
-
 
 # Convert a crossing time to minutes till next train
 def convert_crossing_time(crossing_time):
     global FMT
+    global timezone
 
-    crossing_time_formatted = dt.datetime.strptime(crossing_time, FMT)
+    # crossing_time_formatted = dt.datetime.strptime(crossing_time, FMT)
+    # now_formatted = now_local_time()
+    # tdelta = crossing_time_formatted - now_formatted
+
+    # Convert string to datetime
+    crossing_time_datetime = dt.datetime.strptime(crossing_time, FMT)
+
+    # Add EST time zone, so I can do substraction on it with another time-zone aware datetime (now)
+    crossing_time_tz_aware = timezone.localize(crossing_time_datetime)
+    crossing_time_tz_aware_formatted = crossing_time_tz_aware.astimezone(timezone)
+
+    # Convert crossing time to minutes from now.
     now_formatted = now_local_time()
-    tdelta = crossing_time_formatted - now_formatted
-    # 1200 is a Temporary fudge factor for AWS deployment. So far it's working/
-    mins_till_next_crossing = int(tdelta.seconds / 60) - 1200
-    return mins_till_next_crossing
+    tdelta = crossing_time_tz_aware_formatted - now_formatted
+
+    # 1200 was a Temporary fudge factor for AWS deployment.
+    # 1140 is placeholder for now...hmmm...
+    mins_till_next_crossing = int(tdelta.seconds / 60) - 1140
+    return mins_till_next_crossing, crossing_time_tz_aware_formatted
 
 
 # Get the predictions for next train crossing times, as many as MBTA is predicting.
@@ -45,6 +57,7 @@ def next_crossings():
     response = endpoint.get()
 
     upcoming_crossings = []
+    crossing_times_debug = []
 
     # No trains predicted?
     if not len(response.data):
@@ -72,9 +85,10 @@ def next_crossings():
                 continue
 
         crossing_time, _ = crossing_time.split('-')
-        mins_till_next_crossing = convert_crossing_time(crossing_time)
+        mins_till_next_crossing, crossing_time_tz_aware_formatted = convert_crossing_time(crossing_time)
 
         upcoming_crossings.append(mins_till_next_crossing)
+        crossing_times_debug.append(crossing_time_tz_aware_formatted)
 
     # Sort the times in ascending order. I noticed sometimes the MBTA API returns predictions out of order.
     upcoming_crossings.sort()
@@ -82,7 +96,7 @@ def next_crossings():
     # Add "minutes" string, using a list comprehension
     result = [str(crossing) + ' minutes' for crossing in upcoming_crossings]
 
-    return result
+    return result, crossing_times_debug
 
 
 # Flask app
@@ -93,9 +107,9 @@ def index():
 
         current_time = now_local_time()
 
-        upcoming_crossings = next_crossings()
+        upcoming_crossings, crossing_times_debug = next_crossings()
 
-        return render_template("main_page.html", upcoming_trains=upcoming_crossings, current_time = current_time)
+        return render_template("main_page.html", upcoming_trains=upcoming_crossings, current_time = current_time, crossing_times_debug=crossing_times_debug)
 
 if __name__ == "__main__":
     app.run()
