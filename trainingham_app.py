@@ -21,25 +21,31 @@ def convert_crossing_time(crossing_time):
     global FMT
     global timezone
 
-    # crossing_time_formatted = dt.datetime.strptime(crossing_time, FMT)
-    # now_formatted = now_local_time()
-    # tdelta = crossing_time_formatted - now_formatted
+    # Convert string to datetime that is naive of time zone
+    crossing_time_naive = dt.datetime.strptime(crossing_time, FMT)
+
+    # Inefficient way to strip out timezone offset, surely there's a more Pythonic way.
+    now_str = now_local_time().strftime(FMT)
+    now_naive = dt.datetime.strptime(now_str, FMT)
+
+    tdelta = crossing_time_naive - now_naive
+    mins_till_next_crossing = int(tdelta.seconds/60) #-1140
 
     # Convert string to datetime
-    crossing_time_datetime = dt.datetime.strptime(crossing_time, FMT)
+    # crossing_time_datetime = dt.datetime.strptime(crossing_time, FMT)
 
     # Add EST time zone, so I can do substraction on it with another time-zone aware datetime (now)
-    crossing_time_tz_aware = timezone.localize(crossing_time_datetime)
-    crossing_time_tz_aware_formatted = crossing_time_tz_aware.astimezone(timezone)
+    # crossing_time_tz_aware = timezone.localize(crossing_time_datetime)
+    # crossing_time_tz_aware_formatted = crossing_time_tz_aware.astimezone(timezone)
 
     # Convert crossing time to minutes from now.
-    now_formatted = now_local_time()
-    tdelta = crossing_time_tz_aware_formatted - now_formatted
+    # now_formatted = now_local_time()
+    # tdelta = crossing_time_tz_aware_formatted - now_formatted
 
     # 1200 was a Temporary fudge factor for AWS deployment.
     # 1140 is placeholder for now...hmmm...
-    mins_till_next_crossing = int(tdelta.seconds / 60) - 1140
-    return mins_till_next_crossing, crossing_time_tz_aware_formatted
+    # mins_till_next_crossing = int(tdelta.seconds/60)
+    return mins_till_next_crossing, crossing_time_naive
 
 
 # Get the predictions for next train crossing times, as many as MBTA is predicting.
@@ -85,10 +91,10 @@ def next_crossings():
                 continue
 
         crossing_time, _ = crossing_time.split('-')
-        mins_till_next_crossing, crossing_time_tz_aware_formatted = convert_crossing_time(crossing_time)
+        mins_till_next_crossing, crossing_time_naive = convert_crossing_time(crossing_time)
 
         upcoming_crossings.append(mins_till_next_crossing)
-        crossing_times_debug.append(crossing_time_tz_aware_formatted)
+        crossing_times_debug.append(crossing_time_naive)
 
     # Sort the times in ascending order. I noticed sometimes the MBTA API returns predictions out of order.
     upcoming_crossings.sort()
@@ -105,7 +111,8 @@ def next_crossings():
 def index():
     if request.method == "GET":
 
-        current_time = now_local_time()
+        now_str = now_local_time().strftime(FMT)
+        current_time = dt.datetime.strptime(now_str, FMT)
 
         upcoming_crossings, crossing_times_debug = next_crossings()
 
