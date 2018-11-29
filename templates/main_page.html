@@ -78,21 +78,6 @@
                 <p>&nbsp; </p>
                 <p>This page updates every 30 seconds.</p>
             </div>
-            <div class="row">
-                <p>&nbsp; </p>
-                <p>Last updated: </p> {{ current_time }}
-
-                <p>Crossing times:</p>
-                {% for crossing_time in crossing_times_debug %}
-                <div id="result" class="row" style="margin-left: 20%">
-                    <div class="row" style="font-size: medium;">
-                        <h2>{{ crossing_time }} </h2>
-                    </div>
-                </div>
-                {% endfor %}
-
-            </div>
-
 
         </div>
 
