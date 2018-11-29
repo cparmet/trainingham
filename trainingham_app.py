@@ -14,6 +14,7 @@ def convert_crossing_time(crossing_time):
     now_tzaware = dt.datetime.now(pytz.utc)
 
     # Use dateutil's sweet parser to convert time from MBTA API into a time-zone aware datetime.
+    # including timezone offset and today's date. Need all that for the subtraction from now (tz aware).
     crossing_time_tzaware = dateutil.parser.parse(crossing_time)
 
     tdelta = crossing_time_tzaware  - now_tzaware
@@ -53,8 +54,6 @@ def next_crossings():
         # For an outbound train, we'd want to use arrival time.
         if direction == 'inbound':
             try:
-                # Don't split out (remove) today's date. Need it.
-                # _, crossing_time = r.attributes['departure_time'].split('T')
                 crossing_time = r.attributes['departure_time']
             except:
                 # If there's no departure time, it's not useful to me. Don't add a train prediction.
@@ -62,8 +61,6 @@ def next_crossings():
                 continue
         else:
             try:
-                # Don't split out (remove) today's date. Need it.
-                # _, crossing_time = r.attributes['arrival_time'].split('T')
                 crossing_time = r.attributes['arrival_time']
             except:
                 # If there's no arrival time, it's not useful to me. Don't add a train prediction.
@@ -71,9 +68,10 @@ def next_crossings():
                 # But hey, strange things happen on the rails.
                 continue
 
-        # Use dateutil's parser to convert it to a full tz aware datetime, including timezone offset and today's date.
+        # Convert crossing time into minutes from now.
         mins_till_next_crossing = convert_crossing_time(crossing_time)
 
+        # Don't display negative minutes. Bad form, sire.
         if mins_till_next_crossing>=0:
             upcoming_crossings.append(mins_till_next_crossing)
 
