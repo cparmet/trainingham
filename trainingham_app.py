@@ -1,20 +1,24 @@
 from flask import Flask, redirect, render_template, request, url_for
 import jsonapi_requests
 import datetime as dt
+import dateutil.parser
 import pytz
 
 app = Flask(__name__)
 FMT = '%H:%M:%S'
-timezone = pytz.timezone("America/New_York")
+# timezone = pytz.timezone("America/New_York")
 
 # Get the current local time in Framingham time zone
 def now_local_time():
-    global timezone
+    # global timezone
 
-    now = dt.datetime.now()
-    now_tz_aware = timezone.localize(now)
-    time_tz_aware_formatted = now_tz_aware.astimezone(timezone)
-    return time_tz_aware_formatted
+    # Get current time in UTC. 931 AM = 1431+0:00, with today's date
+    now = dt.datetime.now(pytz.utc)
+
+    # now = dt.datetime.now()
+    # now_tz_aware = timezone.localize(now)
+    # time_tz_aware_formatted = now_tz_aware.astimezone(timezone)
+    return now # time_tz_aware_formatted
 
 # Convert a crossing time to minutes till next train
 def convert_crossing_time(crossing_time):
@@ -22,14 +26,20 @@ def convert_crossing_time(crossing_time):
     global timezone
 
     # Convert string to datetime that is naive of time zone
-    crossing_time_naive = dt.datetime.strptime(crossing_time, FMT)
+    # crossing_time_naive = dt.datetime.strptime(crossing_time, FMT)
 
     # Inefficient way to strip out timezone offset, surely there's a more Pythonic way.
-    now_str = now_local_time().strftime(FMT)
-    now_naive = dt.datetime.strptime(now_str, FMT)
+    # now_str = now_local_time().strftime(FMT)
+    # now_naive = dt.datetime.strptime(now_str, FMT)
 
-    tdelta = crossing_time_naive - now_naive
-    mins_till_next_crossing = int(tdelta.seconds/60) #-1140
+    now_tzaware = now_local_time()
+    crossing_time_tzaware = dateutil.parser.parse(crossing_time)
+
+    tdelta = crossing_time_tzaware  - now_tzaware
+
+    # Use // for floor division. Round down to smaller # of minutes/
+    mins_till_next_crossing = int(tdelta.seconds // 60) #-1140
+
 
     # Convert string to datetime
     # crossing_time_datetime = dt.datetime.strptime(crossing_time, FMT)
@@ -45,7 +55,7 @@ def convert_crossing_time(crossing_time):
     # 1200 was a Temporary fudge factor for AWS deployment.
     # 1140 is placeholder for now...hmmm...
     # mins_till_next_crossing = int(tdelta.seconds/60)
-    return mins_till_next_crossing, crossing_time_naive
+    return mins_till_next_crossing, crossing_time_tzaware
 
 
 # Get the predictions for next train crossing times, as many as MBTA is predicting.
@@ -90,10 +100,13 @@ def next_crossings():
                 # But hey, strange things happen on the rails.
                 continue
 
-        crossing_time, _ = crossing_time.split('-')
+        # Don't split it. Use dateutil's parser to convert it to a full tz aware datetime, including today's date.
+        # crossing_time, _ = crossing_time.split('-')
         mins_till_next_crossing, crossing_time_naive = convert_crossing_time(crossing_time)
 
-        upcoming_crossings.append(mins_till_next_crossing)
+        if mins_till_next_crossing>=0:
+            upcoming_crossings.append(mins_till_next_crossing)
+
         crossing_times_debug.append(crossing_time_naive)
 
     # Sort the times in ascending order. I noticed sometimes the MBTA API returns predictions out of order.
@@ -111,8 +124,9 @@ def next_crossings():
 def index():
     if request.method == "GET":
 
-        now_str = now_local_time().strftime(FMT)
-        current_time = dt.datetime.strptime(now_str, FMT)
+        # now_str = now_local_time().strftime(FMT)
+        # current_time = dt.datetime.strptime(now_str, FMT)
+        current_time = now_local_time()
 
         upcoming_crossings, crossing_times_debug = next_crossings()
 
