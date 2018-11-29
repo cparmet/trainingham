@@ -5,61 +5,28 @@ import dateutil.parser
 import pytz
 
 app = Flask(__name__)
-FMT = '%H:%M:%S'
-# timezone = pytz.timezone("America/New_York")
 
-# Get the current local time in Framingham time zone
-def now_local_time():
-    # global timezone
-
-    # Get current time in UTC. 931 AM = 1431+0:00, with today's date
-    now = dt.datetime.now(pytz.utc)
-
-    # now = dt.datetime.now()
-    # now_tz_aware = timezone.localize(now)
-    # time_tz_aware_formatted = now_tz_aware.astimezone(timezone)
-    return now # time_tz_aware_formatted
-
-# Convert a crossing time to minutes till next train
 def convert_crossing_time(crossing_time):
-    global FMT
-    global timezone
+    ''' Convert a crossing time to minutes from now till next train
+    '''
 
-    # Convert string to datetime that is naive of time zone
-    # crossing_time_naive = dt.datetime.strptime(crossing_time, FMT)
+    # What time is it now? Time-zone aware datetime.
+    now_tzaware = dt.datetime.now(pytz.utc)
 
-    # Inefficient way to strip out timezone offset, surely there's a more Pythonic way.
-    # now_str = now_local_time().strftime(FMT)
-    # now_naive = dt.datetime.strptime(now_str, FMT)
-
-    now_tzaware = now_local_time()
+    # Use dateutil's sweet parser to convert time from MBTA API into a time-zone aware datetime.
     crossing_time_tzaware = dateutil.parser.parse(crossing_time)
 
     tdelta = crossing_time_tzaware  - now_tzaware
 
-    # Use // for floor division. Round down to smaller # of minutes/
+    # Convert to minutes till. Use // for floor division, rounds down. I'd rather be a little early.
     mins_till_next_crossing = int(tdelta.seconds // 60) #-1140
 
-
-    # Convert string to datetime
-    # crossing_time_datetime = dt.datetime.strptime(crossing_time, FMT)
-
-    # Add EST time zone, so I can do substraction on it with another time-zone aware datetime (now)
-    # crossing_time_tz_aware = timezone.localize(crossing_time_datetime)
-    # crossing_time_tz_aware_formatted = crossing_time_tz_aware.astimezone(timezone)
-
-    # Convert crossing time to minutes from now.
-    # now_formatted = now_local_time()
-    # tdelta = crossing_time_tz_aware_formatted - now_formatted
-
-    # 1200 was a Temporary fudge factor for AWS deployment.
-    # 1140 is placeholder for now...hmmm...
-    # mins_till_next_crossing = int(tdelta.seconds/60)
-    return mins_till_next_crossing, crossing_time_tzaware
+    return mins_till_next_crossing
 
 
-# Get the predictions for next train crossing times, as many as MBTA is predicting.
 def next_crossings():
+    '''Get the predictions for next train crossing times, as many as MBTA is predicting.
+    '''
 
     # Use MBTA API to get upcoming train crossings
     api = jsonapi_requests.Api.config({
@@ -73,41 +40,42 @@ def next_crossings():
     response = endpoint.get()
 
     upcoming_crossings = []
-    crossing_times_debug = []
 
     # No trains predicted?
     if not len(response.data):
         return ['No imminent trains predicted by MBTA.']
 
+    # We have trains!
     for i, r in enumerate(response.data):
         direction = str(['outbound' if r.attributes['direction_id'] == 1 else 'inbound'][0])
 
-        # For an inbound train, the next time it will depart from Framingham
+        # For an inbound train, the next time it will depart from Framingham.
         # For an outbound train, we'd want to use arrival time.
         if direction == 'inbound':
             try:
-                _, crossing_time = r.attributes['departure_time'].split('T')
+                # Don't split out (remove) today's date. Need it.
+                # _, crossing_time = r.attributes['departure_time'].split('T')
+                crossing_time = r.attributes['departure_time']
             except:
                 # If there's no departure time, it's not useful to me. Don't add a train prediction.
                 # Maybe we have an inbound train arriving at Framingham and going no further?
                 continue
         else:
             try:
-                _, crossing_time = r.attributes['arrival_time'].split('T')
+                # Don't split out (remove) today's date. Need it.
+                # _, crossing_time = r.attributes['arrival_time'].split('T')
+                crossing_time = r.attributes['arrival_time']
             except:
                 # If there's no arrival time, it's not useful to me. Don't add a train prediction.
                 # I don't know why an inbound train predicted for Framingham wouldn't arrive there.
                 # But hey, strange things happen on the rails.
                 continue
 
-        # Don't split it. Use dateutil's parser to convert it to a full tz aware datetime, including today's date.
-        # crossing_time, _ = crossing_time.split('-')
-        mins_till_next_crossing, crossing_time_naive = convert_crossing_time(crossing_time)
+        # Use dateutil's parser to convert it to a full tz aware datetime, including timezone offset and today's date.
+        mins_till_next_crossing = convert_crossing_time(crossing_time)
 
         if mins_till_next_crossing>=0:
             upcoming_crossings.append(mins_till_next_crossing)
-
-        crossing_times_debug.append(crossing_time_naive)
 
     # Sort the times in ascending order. I noticed sometimes the MBTA API returns predictions out of order.
     upcoming_crossings.sort()
@@ -115,7 +83,7 @@ def next_crossings():
     # Add "minutes" string, using a list comprehension
     result = [str(crossing) + ' minutes' for crossing in upcoming_crossings]
 
-    return result, crossing_times_debug
+    return result
 
 
 # Flask app
@@ -124,13 +92,9 @@ def next_crossings():
 def index():
     if request.method == "GET":
 
-        # now_str = now_local_time().strftime(FMT)
-        # current_time = dt.datetime.strptime(now_str, FMT)
-        current_time = now_local_time()
+        upcoming_crossings = next_crossings()
 
-        upcoming_crossings, crossing_times_debug = next_crossings()
-
-        return render_template("main_page.html", upcoming_trains=upcoming_crossings, current_time = current_time, crossing_times_debug=crossing_times_debug)
+        return render_template("main_page.html", upcoming_trains=upcoming_crossings)
 
 if __name__ == "__main__":
     app.run()
